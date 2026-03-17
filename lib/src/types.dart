@@ -1,3 +1,5 @@
+// ignore_for_file: public_member_api_docs
+
 /*
  * QR.Flutter
  * Copyright (c) 2019 the QR.Flutter authors.
@@ -6,7 +8,6 @@
 
 import 'package:flutter/widgets.dart';
 import 'dart:ui';
-
 
 /// Represents a specific element / part of a QR code. This is used to isolate
 /// the different parts so that we can style and modify specific parts
@@ -47,6 +48,45 @@ enum QrEyeShape {
 
   /// Use circular eye frame.
   circle,
+
+  /// Rounded corner eye frame.
+  roundedOuter,
+
+  /// Circle outer, square inner
+  circleOuter,
+
+  /// Square outer, rounded inner
+  roundedInner,
+
+  /// Extra rounded
+  extraRounded,
+
+  /// Leaf shape
+  leaf,
+
+  /// Shield shape
+  shield,
+
+  /// Squircle shape
+  squircle,
+
+  /// Diamond shape
+  diamond,
+
+  /// Star shape
+  star,
+
+  /// Dots shape
+  dots,
+
+  /// Sharp corner
+  sharpCorner,
+
+  /// Asymmetric
+  asymmetric,
+
+  /// Pinched
+  pinched,
 }
 
 /// Enumeration representing the shape of Data modules inside QR.
@@ -56,6 +96,13 @@ enum QrDataModuleShape {
 
   /// Use circular dots.
   circle,
+
+  roundedSquare,
+  diamond,
+  star,
+  cross,
+  horizontal,
+  vertical,
 }
 
 /// Enumeration representing the shape behind embedded picture
@@ -134,10 +181,11 @@ class QrDataModuleStyle {
   /// [_outsideBorderRadius] <= [borderRadius]
   /// Get border radius for outside corners
   double get outsideBorderRadius {
-    if(roundedOutsideCorners) {
-      return _outsideBorderRadius != null
-          && _outsideBorderRadius! < borderRadius
-          ? _outsideBorderRadius! : borderRadius;
+    if (roundedOutsideCorners) {
+      return _outsideBorderRadius != null &&
+              _outsideBorderRadius! < borderRadius
+          ? _outsideBorderRadius!
+          : borderRadius;
     }
     return 0;
   }
