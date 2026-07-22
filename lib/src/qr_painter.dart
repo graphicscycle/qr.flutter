@@ -1007,7 +1007,7 @@ class QrPainter extends CustomPainter {
         final vCount12 = 12; // vertical dots count
         final hStep12 = outerRect.width / (hCount12 - 1);
         final vStep12 = outerRect.height / (vCount12 - 1);
-        final dotR12 = metrics.pixelSize * 0.7; // dots বড়
+        final dotR12 = metrics.pixelSize * 0.45; // dots thinner
 
         // top edge
         for (int i = 0; i < hCount12; i++) {
