@@ -587,15 +587,16 @@ class QrPainter extends CustomPainter {
     Canvas canvas,
     Path outer,
     Path hole,
-    Paint paint, {
+    Paint framePaint, {
     Path? pupil,
+    Paint? pupilPaint,
   }) {
     canvas.drawPath(
       Path.combine(PathOperation.difference, outer, hole),
-      paint,
+      framePaint,
     );
     if (pupil != null) {
-      canvas.drawPath(pupil, paint);
+      canvas.drawPath(pupil, pupilPaint ?? framePaint);
     }
   }
 
@@ -607,6 +608,134 @@ class QrPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round
       ..isAntiAlias = true
       ..color = color;
+  }
+
+  Paint _eyeFill(
+    Color color, {
+    Gradient? gradient,
+    Rect? bounds,
+  }) {
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true
+      ..color = color;
+    if (gradient != null && bounds != null) {
+      paint.shader = gradient.createShader(bounds);
+    }
+    return paint;
+  }
+
+  _FigmaEyeTheme _figmaEyeTheme(QrEyeShape shape, Color fallback) {
+    if (!eyeStyle.useFigmaColors) {
+      return _FigmaEyeTheme(frame: fallback, pupil: fallback);
+    }
+    switch (shape) {
+      case QrEyeShape.dottedSlash:
+        return const _FigmaEyeTheme(
+          frame: Color(0xffb4e600),
+          pupil: Color(0xffb4e600),
+        );
+      case QrEyeShape.bear:
+        return const _FigmaEyeTheme(
+          frame: Color(0xffff4fa3),
+          pupil: Color(0xffff4fa3),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xffff6eb4), Color(0xffb13de0)],
+          ),
+        );
+      case QrEyeShape.roundedCircle:
+        return const _FigmaEyeTheme(
+          frame: Color(0xffff7a18),
+          pupil: Color(0xffff7a18),
+          accent: Color(0xffffc4a8),
+        );
+      case QrEyeShape.dottedMatrix:
+        return const _FigmaEyeTheme(
+          frame: Color(0xffff7a18),
+          pupil: Color(0xff3d7eff),
+          accent: Color(0xff9b4dff),
+        );
+      case QrEyeShape.pumpkin:
+        return const _FigmaEyeTheme(
+          frame: Color(0xff1f1f1f),
+          pupil: Color(0xff1f1f1f),
+          accent: Color(0xffff2d2d),
+        );
+      case QrEyeShape.windowGrid:
+        return const _FigmaEyeTheme(
+          frame: Color(0xff3b5bdb),
+          pupil: Color(0xff3b5bdb),
+        );
+      case QrEyeShape.glitch:
+        return const _FigmaEyeTheme(
+          frame: Color(0xff111111),
+          pupil: Color(0xff111111),
+          accent: Color(0xffff4fd8),
+        );
+      case QrEyeShape.leafCircle:
+        return const _FigmaEyeTheme(
+          frame: Color(0xff1a1028),
+          pupil: Color(0xff3ddc84),
+        );
+      case QrEyeShape.gift:
+        return const _FigmaEyeTheme(
+          frame: Color(0xff3b5bdb),
+          pupil: Color(0xff3b5bdb),
+        );
+      case QrEyeShape.circleStar:
+        return const _FigmaEyeTheme(
+          frame: Color(0xff2ecc71),
+          pupil: Color(0xff2ecc71),
+        );
+      case QrEyeShape.basketball:
+        return const _FigmaEyeTheme(
+          frame: Color(0xffff6a00),
+          pupil: Color(0xffff6a00),
+          accent: Color(0xff5d3310),
+        );
+      case QrEyeShape.play:
+        return const _FigmaEyeTheme(
+          frame: Color(0xffff2d2d),
+          pupil: Color(0xffff2d2d),
+          accent: Color(0xffb71c1c),
+        );
+      case QrEyeShape.paw:
+        return const _FigmaEyeTheme(
+          frame: Color(0xff2f5bea),
+          pupil: Color(0xff2f5bea),
+          accent: Color(0xff8fa6ff),
+        );
+      case QrEyeShape.splitCircle:
+        return const _FigmaEyeTheme(
+          frame: Color(0xff4da3ff),
+          pupil: Color(0xff4da3ff),
+          accent: Color(0xff1e6fd8),
+        );
+      case QrEyeShape.clover:
+        return const _FigmaEyeTheme(
+          frame: Color(0xff7CFC00),
+          pupil: Color(0xff7CFC00),
+        );
+      case QrEyeShape.gradientRing:
+        return const _FigmaEyeTheme(
+          frame: Color(0xffff6a00),
+          pupil: Color(0xffff2d9b),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xffff8a00), Color(0xffff2d9b)],
+          ),
+        );
+      case QrEyeShape.squareHeart:
+        return const _FigmaEyeTheme(
+          frame: Color(0xffff2d9b),
+          pupil: Color(0xffff2d9b),
+        );
+      default:
+        return _FigmaEyeTheme(frame: fallback, pupil: fallback);
+    }
   }
 
   @override
@@ -1324,10 +1453,30 @@ class QrPainter extends CustomPainter {
       dotSize,
     );
 
-    final fillPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true
-      ..color = color;
+    // Fill-based eyes need the full 7x7 finder bounds. Stroke eyes draw on a
+    // centered path that visually expands by half a module on each side.
+    // Figma eyes use a thicker frame and a larger pupil than classic 7-5-3.
+    final frameRect = outerRect.inflate(strokeAdjust);
+    final holeRect = frameRect.deflate(metrics.pixelSize * 1.15);
+    final pupilRect = frameRect.deflate(metrics.pixelSize * 1.7);
+
+    final theme = _figmaEyeTheme(eyeStyle.eyeShape, color);
+    final frameColor = eyeStyle.frameColor ?? theme.frame;
+    final pupilColor = eyeStyle.pupilColor ?? theme.pupil;
+    final accentColor = eyeStyle.accentColor ?? theme.accent ?? pupilColor;
+    final eyeGradient = eyeStyle.gradient ?? theme.gradient;
+
+    final framePaint = _eyeFill(
+      frameColor,
+      gradient: eyeGradient,
+      bounds: frameRect,
+    );
+    final pupilPaint = _eyeFill(
+      pupilColor,
+      gradient: eyeGradient,
+      bounds: pupilRect,
+    );
+    final accentPaint = _eyeFill(accentColor);
     const octagonTurn = -math.pi / 2 + math.pi / 8;
 
     switch (eyeStyle.eyeShape) {
@@ -1762,35 +1911,38 @@ class QrPainter extends CustomPainter {
       case QrEyeShape.diamondSquare:
         _drawEyeRing(
           canvas,
-          Path()..addRect(outerRect),
-          Path()..addRect(innerRect),
-          fillPaint,
-          pupil: _regularPolygon(dotRect, 4),
+          Path()..addRect(frameRect),
+          Path()..addRect(holeRect),
+          framePaint,
+          pupil: _regularPolygon(pupilRect, 4),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.arch:
         {
-          final outer = _roundRect(outerRect, 0.46);
-          final hole = _roundRect(innerRect, 0.46);
-          final ring = Path.combine(
-            PathOperation.difference,
-            outer,
-            hole,
-          );
-          final opening = Rect.fromLTRB(
-            outerRect.left - 2,
-            outerRect.top - 2,
-            outerRect.right + 2,
-            outerRect.top + outerRect.height * 0.34,
-          );
-          canvas.drawPath(
-            Path.combine(
-              PathOperation.difference,
-              ring,
-              Path()..addRect(opening),
-            ),
-            fillPaint,
+          Path uShape(Rect rect) {
+            final r = rect.shortestSide * 0.46;
+            final path = Path()
+              ..moveTo(rect.left, rect.top)
+              ..lineTo(rect.right, rect.top)
+              ..lineTo(rect.right, rect.bottom - r)
+              ..arcToPoint(
+                Offset(rect.left, rect.bottom - r),
+                radius: Radius.circular(rect.width / 2),
+                clockwise: false,
+              )
+              ..close();
+            return path;
+          }
+
+          _drawEyeRing(
+            canvas,
+            uShape(frameRect),
+            uShape(holeRect),
+            framePaint,
+            pupil: uShape(pupilRect.deflate(pupilRect.shortestSide * 0.02)),
+            pupilPaint: pupilPaint,
           );
         }
         break;
@@ -1798,45 +1950,46 @@ class QrPainter extends CustomPainter {
       case QrEyeShape.starCut:
         _drawEyeRing(
           canvas,
-          Path()..addRect(outerRect),
-          Path()..addRect(innerRect),
-          fillPaint,
-          pupil: _fourPointStar(
-            dotRect.inflate(metrics.pixelSize * 0.2),
-            pull: 0.1,
-          ),
+          Path()..addRect(frameRect),
+          Path()..addRect(holeRect),
+          framePaint,
+          pupil: _fourPointStar(pupilRect, pull: 0.12),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.circleBite:
         _drawEyeRing(
           canvas,
-          _bittenOval(outerRect),
-          _bittenOval(innerRect),
-          fillPaint,
+          _bittenOval(frameRect),
+          _bittenOval(holeRect),
+          framePaint,
           pupil: _bittenOval(
-            dotRect.deflate(dotRect.shortestSide * 0.04),
+            pupilRect.deflate(pupilRect.shortestSide * 0.02),
           ),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.octagon:
         _drawEyeRing(
           canvas,
-          _regularPolygon(outerRect, 8, rotation: octagonTurn),
-          _regularPolygon(innerRect, 8, rotation: octagonTurn),
-          fillPaint,
-          pupil: _regularPolygon(dotRect, 8, rotation: octagonTurn),
+          _regularPolygon(frameRect, 8, rotation: octagonTurn),
+          _regularPolygon(holeRect, 8, rotation: octagonTurn),
+          framePaint,
+          pupil: _regularPolygon(pupilRect, 8, rotation: octagonTurn),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.roundedDiamond:
         _drawEyeRing(
           canvas,
-          _roundRect(outerRect, 0.28),
-          _roundRect(innerRect, 0.24),
-          fillPaint,
-          pupil: _regularPolygon(dotRect, 4),
+          _roundRect(frameRect, 0.32),
+          _roundRect(holeRect, 0.28),
+          framePaint,
+          pupil: _regularPolygon(pupilRect, 4),
+          pupilPaint: pupilPaint,
         );
         break;
 
@@ -1844,99 +1997,97 @@ class QrPainter extends CustomPainter {
         _drawEyeRing(
           canvas,
           _cornerRadiiPath(
-            outerRect,
-            topLeft: 0.06,
-            topRight: 0.06,
-            bottomLeft: 0.06,
-            bottomRight: 0.48,
+            frameRect,
+            topLeft: 0.55,
+            topRight: 0.08,
+            bottomLeft: 0.08,
+            bottomRight: 0.08,
           ),
           _cornerRadiiPath(
-            innerRect,
-            topLeft: 0.04,
-            topRight: 0.04,
-            bottomLeft: 0.04,
-            bottomRight: 0.42,
-          ),
-          fillPaint,
-          pupil: _cornerRadiiPath(
-            dotRect,
-            topLeft: 0.06,
+            holeRect,
+            topLeft: 0.5,
             topRight: 0.06,
             bottomLeft: 0.06,
-            bottomRight: 0.48,
+            bottomRight: 0.06,
           ),
+          framePaint,
+          pupil: _cornerRadiiPath(
+            pupilRect,
+            topLeft: 0.55,
+            topRight: 0.08,
+            bottomLeft: 0.08,
+            bottomRight: 0.08,
+          ),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.circleSpark:
         _drawEyeRing(
           canvas,
-          Path()..addOval(outerRect),
-          Path()..addOval(innerRect),
-          fillPaint,
-          pupil: _fourPointStar(
-            dotRect.deflate(dotRect.shortestSide * 0.06),
-            pull: 0.1,
-          ),
+          Path()..addOval(frameRect),
+          Path()..addOval(holeRect),
+          framePaint,
+          pupil: _fourPointStar(pupilRect, pull: 0.12),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.octagonTriangle:
         _drawEyeRing(
           canvas,
-          _regularPolygon(outerRect, 8, rotation: octagonTurn),
-          _regularPolygon(innerRect, 8, rotation: octagonTurn),
-          fillPaint,
-          pupil: _regularPolygon(
-            dotRect.deflate(dotRect.shortestSide * 0.06),
-            3,
-          ),
+          _regularPolygon(frameRect, 8, rotation: octagonTurn),
+          _regularPolygon(holeRect, 8, rotation: octagonTurn),
+          framePaint,
+          pupil: _trianglePath(pupilRect),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.squareHeart:
         _drawEyeRing(
           canvas,
-          Path()..addRect(outerRect),
-          Path()..addRect(innerRect),
-          fillPaint,
-          pupil: _heartPath(
-            dotRect.deflate(dotRect.shortestSide * 0.04),
-          ),
+          _roundRect(frameRect, 0.28),
+          _roundRect(holeRect, 0.24),
+          framePaint,
+          pupil: _heartPath(pupilRect),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.circlePillVertical:
         _drawEyeRing(
           canvas,
-          Path()..addOval(outerRect),
-          Path()..addOval(innerRect),
-          fillPaint,
+          Path()..addOval(frameRect),
+          Path()..addOval(holeRect),
+          framePaint,
           pupil: _roundRect(
             Rect.fromCenter(
-              center: dotRect.center,
-              width: dotRect.width * 0.55,
-              height: dotRect.height * 0.92,
+              center: pupilRect.center,
+              width: pupilRect.width * 0.58,
+              height: pupilRect.height * 0.95,
             ),
             0.5,
           ),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.circlePillHorizontal:
         _drawEyeRing(
           canvas,
-          Path()..addOval(outerRect),
-          Path()..addOval(innerRect),
-          fillPaint,
+          Path()..addOval(frameRect),
+          Path()..addOval(holeRect),
+          framePaint,
           pupil: _roundRect(
             Rect.fromCenter(
-              center: dotRect.center,
-              width: dotRect.width * 0.92,
-              height: dotRect.height * 0.55,
+              center: pupilRect.center,
+              width: pupilRect.width * 0.95,
+              height: pupilRect.height * 0.58,
             ),
             0.5,
           ),
+          pupilPaint: pupilPaint,
         );
         break;
 
@@ -1944,68 +2095,86 @@ class QrPainter extends CustomPainter {
         {
           _drawEyeRing(
             canvas,
-            _regularPolygon(outerRect, 8, rotation: octagonTurn),
-            _regularPolygon(innerRect, 8, rotation: octagonTurn),
-            fillPaint,
+            _regularPolygon(frameRect, 8, rotation: octagonTurn),
+            _regularPolygon(holeRect, 8, rotation: octagonTurn),
+            framePaint,
           );
-          final cross = dotRect.deflate(dotRect.shortestSide * 0.06);
-          final crossPaint = _eyeStroke(color, metrics.pixelSize * 0.7);
+          final cross = pupilRect.deflate(pupilRect.shortestSide * 0.02);
+          final crossPaint = _eyeStroke(
+            pupilColor,
+            metrics.pixelSize * 0.85,
+          );
           canvas.drawLine(cross.topLeft, cross.bottomRight, crossPaint);
           canvas.drawLine(cross.topRight, cross.bottomLeft, crossPaint);
         }
         break;
 
       case QrEyeShape.dottedSlash:
-        canvas.drawPath(
-          _createDottedBorderPath(outerRect, metrics.pixelSize * 0.65),
-          fillPaint,
-        );
-        canvas.save();
-        canvas.translate(outerRect.center.dx, outerRect.center.dy);
-        canvas.rotate(-math.pi / 4);
-        canvas.translate(-outerRect.center.dx, -outerRect.center.dy);
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromCenter(
-              center: outerRect.center,
-              width: outerRect.width * 0.72,
-              height: metrics.pixelSize * 0.55,
+        {
+          final leaf = _leafOutline(frameRect);
+          final dashPaint = _eyeStroke(
+            frameColor,
+            metrics.pixelSize * 0.85,
+          )..strokeCap = StrokeCap.round;
+          for (final metric in leaf.computeMetrics()) {
+            var d = 0.0;
+            const dash = 10.0;
+            const gapLen = 7.0;
+            while (d < metric.length) {
+              final next = math.min(d + dash, metric.length);
+              canvas.drawPath(metric.extractPath(d, next), dashPaint);
+              d = next + gapLen;
+            }
+          }
+          canvas.drawPath(
+            Path.combine(
+              PathOperation.difference,
+              _leafOutline(pupilRect),
+              Path()
+                ..moveTo(pupilRect.left, pupilRect.top)
+                ..lineTo(pupilRect.right, pupilRect.bottom)
+                ..lineTo(
+                  pupilRect.right - pupilRect.width * 0.12,
+                  pupilRect.bottom,
+                )
+                ..lineTo(
+                  pupilRect.left,
+                  pupilRect.top + pupilRect.height * 0.12,
+                )
+                ..close(),
             ),
-            Radius.circular(metrics.pixelSize),
-          ),
-          fillPaint,
-        );
-        canvas.restore();
+            pupilPaint,
+          );
+        }
         break;
 
       case QrEyeShape.bear:
         {
-          final earRadius = outerRect.shortestSide * 0.16;
+          final earRadius = frameRect.shortestSide * 0.18;
+          final head = pupilRect.deflate(pupilRect.shortestSide * 0.02);
           canvas.drawCircle(
             Offset(
-              outerRect.left + earRadius * 1.2,
-              outerRect.top + earRadius * 0.9,
+              head.left + earRadius * 0.35,
+              head.top + earRadius * 0.15,
             ),
             earRadius,
-            fillPaint,
+            pupilPaint,
           );
           canvas.drawCircle(
             Offset(
-              outerRect.right - earRadius * 1.2,
-              outerRect.top + earRadius * 0.9,
+              head.right - earRadius * 0.35,
+              head.top + earRadius * 0.15,
             ),
             earRadius,
-            fillPaint,
+            pupilPaint,
           );
           _drawEyeRing(
             canvas,
-            Path()..addOval(outerRect),
-            Path()..addOval(innerRect),
-            fillPaint,
-            pupil: Path()
-              ..addOval(
-                dotRect.deflate(dotRect.shortestSide * 0.08),
-              ),
+            Path()..addOval(frameRect),
+            Path()..addOval(holeRect),
+            framePaint,
+            pupil: Path()..addOval(head),
+            pupilPaint: pupilPaint,
           );
         }
         break;
@@ -2014,38 +2183,22 @@ class QrPainter extends CustomPainter {
         {
           _drawEyeRing(
             canvas,
-            _cornerRadiiPath(
-              outerRect,
-              topLeft: 0.1,
-              topRight: 0.1,
-              bottomLeft: 0.1,
-              bottomRight: 0.46,
-            ),
-            _cornerRadiiPath(
-              innerRect,
-              topLeft: 0.08,
-              topRight: 0.08,
-              bottomLeft: 0.08,
-              bottomRight: 0.4,
-            ),
-            fillPaint,
+            _leafOutline(frameRect),
+            _leafOutline(holeRect),
+            framePaint,
           );
-          final gridGap = dotRect.width * 0.14;
-          final cell = (dotRect.width - gridGap) / 2;
-          final cellRadius = Radius.circular(cell * 0.22);
+          final gridGap = pupilRect.width * 0.16;
+          final cell = (pupilRect.width - gridGap) / 2;
           for (var row = 0; row < 2; row++) {
             for (var col = 0; col < 2; col++) {
-              canvas.drawRRect(
-                RRect.fromRectAndRadius(
-                  Rect.fromLTWH(
-                    dotRect.left + col * (cell + gridGap),
-                    dotRect.top + row * (cell + gridGap),
-                    cell,
-                    cell,
-                  ),
-                  cellRadius,
+              canvas.drawRect(
+                Rect.fromLTWH(
+                  pupilRect.left + col * (cell + gridGap),
+                  pupilRect.top + row * (cell + gridGap),
+                  cell,
+                  cell,
                 ),
-                fillPaint,
+                pupilPaint,
               );
             }
           }
@@ -2055,13 +2208,11 @@ class QrPainter extends CustomPainter {
       case QrEyeShape.leafCircle:
         _drawEyeRing(
           canvas,
-          _leafOutline(outerRect),
-          _leafOutline(innerRect),
-          fillPaint,
-          pupil: Path()
-            ..addOval(
-              dotRect.deflate(dotRect.shortestSide * 0.1),
-            ),
+          _leafOutline(frameRect),
+          _leafOutline(holeRect),
+          framePaint,
+          pupil: Path()..addOval(pupilRect),
+          pupilPaint: pupilPaint,
         );
         break;
 
@@ -2069,27 +2220,27 @@ class QrPainter extends CustomPainter {
         {
           _drawEyeRing(
             canvas,
-            _roundRect(outerRect, 0.22),
-            _roundRect(innerRect, 0.18),
-            fillPaint,
+            _roundRect(frameRect, 0.28),
+            _roundRect(holeRect, 0.24),
+            framePaint,
           );
-          final icon = _eyeStroke(color, metrics.pixelSize * 0.42);
+          final icon = _eyeStroke(pupilColor, metrics.pixelSize * 0.45);
           final box = Rect.fromLTWH(
-            dotRect.left + dotRect.width * 0.08,
-            dotRect.top + dotRect.height * 0.36,
-            dotRect.width * 0.84,
-            dotRect.height * 0.56,
+            pupilRect.left + pupilRect.width * 0.08,
+            pupilRect.top + pupilRect.height * 0.36,
+            pupilRect.width * 0.84,
+            pupilRect.height * 0.56,
           );
           canvas.drawRRect(
             RRect.fromRectAndRadius(
               box,
-              Radius.circular(dotRect.shortestSide * 0.06),
+              Radius.circular(pupilRect.shortestSide * 0.06),
             ),
             icon,
           );
           canvas.drawLine(
-            Offset(dotRect.center.dx, box.top),
-            Offset(dotRect.center.dx, box.bottom),
+            Offset(pupilRect.center.dx, box.top),
+            Offset(pupilRect.center.dx, box.bottom),
             icon,
           );
           final bandY = box.top + box.height * 0.28;
@@ -2098,21 +2249,21 @@ class QrPainter extends CustomPainter {
             Offset(box.right, bandY),
             icon,
           );
-          final bowY = box.top - dotRect.height * 0.02;
+          final bowY = box.top - pupilRect.height * 0.02;
           canvas.drawCircle(
             Offset(
-              dotRect.center.dx - dotRect.width * 0.14,
+              pupilRect.center.dx - pupilRect.width * 0.14,
               bowY,
             ),
-            dotRect.shortestSide * 0.11,
+            pupilRect.shortestSide * 0.11,
             icon,
           );
           canvas.drawCircle(
             Offset(
-              dotRect.center.dx + dotRect.width * 0.14,
+              pupilRect.center.dx + pupilRect.width * 0.14,
               bowY,
             ),
-            dotRect.shortestSide * 0.11,
+            pupilRect.shortestSide * 0.11,
             icon,
           );
         }
@@ -2121,128 +2272,154 @@ class QrPainter extends CustomPainter {
       case QrEyeShape.circleStar:
         _drawEyeRing(
           canvas,
-          Path()..addOval(outerRect),
-          Path()..addOval(innerRect),
-          fillPaint,
-          pupil: _starPolygon(
-            dotRect.deflate(dotRect.shortestSide * 0.02),
-            5,
-            innerRatio: 0.42,
-          ),
+          Path()..addOval(frameRect),
+          Path()..addOval(holeRect),
+          framePaint,
+          pupil: _starPolygon(pupilRect, 5, innerRatio: 0.42),
+          pupilPaint: pupilPaint,
         );
         break;
 
       case QrEyeShape.basketball:
         {
-          final ball = outerRect.deflate(metrics.pixelSize * 0.15);
-          final seam = _eyeStroke(color, metrics.pixelSize * 0.55);
-          canvas.drawOval(
-            ball,
-            _eyeStroke(color, metrics.pixelSize * 0.9),
+          _drawEyeRing(
+            canvas,
+            Path()..addOval(frameRect),
+            Path()..addOval(holeRect),
+            framePaint,
+            pupil: Path()..addOval(pupilRect),
+            pupilPaint: pupilPaint,
           );
+          final seam = _eyeStroke(accentColor, metrics.pixelSize * 0.45);
           canvas.drawLine(
-            Offset(ball.left, ball.center.dy),
-            Offset(ball.right, ball.center.dy),
+            Offset(pupilRect.left, pupilRect.center.dy),
+            Offset(pupilRect.right, pupilRect.center.dy),
             seam,
           );
           canvas.drawLine(
-            Offset(ball.center.dx, ball.top),
-            Offset(ball.center.dx, ball.bottom),
+            Offset(pupilRect.center.dx, pupilRect.top),
+            Offset(pupilRect.center.dx, pupilRect.bottom),
             seam,
           );
-          final leftCurve = Path()
-            ..moveTo(ball.center.dx, ball.top)
-            ..quadraticBezierTo(
-              ball.left + ball.width * 0.08,
-              ball.center.dy,
-              ball.center.dx,
-              ball.bottom,
-            );
-          final rightCurve = Path()
-            ..moveTo(ball.center.dx, ball.top)
-            ..quadraticBezierTo(
-              ball.right - ball.width * 0.08,
-              ball.center.dy,
-              ball.center.dx,
-              ball.bottom,
-            );
-          canvas.drawPath(leftCurve, seam);
-          canvas.drawPath(rightCurve, seam);
+          canvas.drawPath(
+            Path()
+              ..moveTo(pupilRect.center.dx, pupilRect.top)
+              ..quadraticBezierTo(
+                pupilRect.left + pupilRect.width * 0.08,
+                pupilRect.center.dy,
+                pupilRect.center.dx,
+                pupilRect.bottom,
+              ),
+            seam,
+          );
+          canvas.drawPath(
+            Path()
+              ..moveTo(pupilRect.center.dx, pupilRect.top)
+              ..quadraticBezierTo(
+                pupilRect.right - pupilRect.width * 0.08,
+                pupilRect.center.dy,
+                pupilRect.center.dx,
+                pupilRect.bottom,
+              ),
+            seam,
+          );
         }
         break;
 
       case QrEyeShape.play:
-        _drawEyeRing(
-          canvas,
-          _roundRect(outerRect, 0.22),
-          _roundRect(innerRect, 0.18),
-          fillPaint,
-          pupil: Path()
-            ..moveTo(
-              dotRect.left + dotRect.width * 0.22,
-              dotRect.top + dotRect.height * 0.14,
-            )
-            ..lineTo(
-              dotRect.right - dotRect.width * 0.16,
-              dotRect.center.dy,
-            )
-            ..lineTo(
-              dotRect.left + dotRect.width * 0.22,
-              dotRect.bottom - dotRect.height * 0.14,
-            )
-            ..close(),
-        );
+        {
+          _drawEyeRing(
+            canvas,
+            _roundRect(frameRect, 0.32),
+            _roundRect(holeRect, 0.28),
+            framePaint,
+          );
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(
+              pupilRect,
+              Radius.circular(pupilRect.shortestSide * 0.22),
+            ),
+            pupilPaint,
+          );
+          canvas.drawPath(
+            Path()
+              ..moveTo(
+                pupilRect.left + pupilRect.width * 0.32,
+                pupilRect.top + pupilRect.height * 0.22,
+              )
+              ..lineTo(
+                pupilRect.right - pupilRect.width * 0.22,
+                pupilRect.center.dy,
+              )
+              ..lineTo(
+                pupilRect.left + pupilRect.width * 0.32,
+                pupilRect.bottom - pupilRect.height * 0.22,
+              )
+              ..close(),
+            accentPaint,
+          );
+        }
         break;
 
       case QrEyeShape.roundedCircle:
-        _drawEyeRing(
-          canvas,
-          _roundRect(outerRect, 0.28),
-          _roundRect(innerRect, 0.22),
-          fillPaint,
-          pupil: Path()
-            ..addOval(
-              dotRect.deflate(dotRect.shortestSide * 0.08),
+        {
+          _drawEyeRing(
+            canvas,
+            _roundRect(frameRect, 0.34),
+            _roundRect(holeRect, 0.3),
+            framePaint,
+          );
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(
+              pupilRect,
+              Radius.circular(pupilRect.shortestSide * 0.28),
             ),
-        );
+            pupilPaint,
+          );
+          canvas.drawOval(
+            pupilRect.deflate(pupilRect.shortestSide * 0.22),
+            accentPaint,
+          );
+        }
         break;
 
       case QrEyeShape.paw:
         {
           _drawEyeRing(
             canvas,
-            _roundRect(outerRect, 0.22),
-            _roundRect(innerRect, 0.18),
-            fillPaint,
+            _roundRect(frameRect, 0.32),
+            _roundRect(holeRect, 0.28),
+            framePaint,
           );
-          final toeRadius = dotRect.shortestSide * 0.13;
+          canvas.drawOval(pupilRect, pupilPaint);
+          final toeRadius = pupilRect.shortestSide * 0.13;
           final toes = <Offset>[
             Offset(
-              dotRect.center.dx - dotRect.width * 0.28,
-              dotRect.top + dotRect.height * 0.28,
+              pupilRect.center.dx - pupilRect.width * 0.28,
+              pupilRect.top + pupilRect.height * 0.28,
             ),
             Offset(
-              dotRect.center.dx,
-              dotRect.top + dotRect.height * 0.14,
+              pupilRect.center.dx,
+              pupilRect.top + pupilRect.height * 0.14,
             ),
             Offset(
-              dotRect.center.dx + dotRect.width * 0.28,
-              dotRect.top + dotRect.height * 0.28,
+              pupilRect.center.dx + pupilRect.width * 0.28,
+              pupilRect.top + pupilRect.height * 0.28,
             ),
           ];
           for (final toe in toes) {
-            canvas.drawCircle(toe, toeRadius, fillPaint);
+            canvas.drawCircle(toe, toeRadius, accentPaint);
           }
           canvas.drawOval(
             Rect.fromCenter(
               center: Offset(
-                dotRect.center.dx,
-                dotRect.bottom - dotRect.height * 0.30,
+                pupilRect.center.dx,
+                pupilRect.bottom - pupilRect.height * 0.30,
               ),
-              width: dotRect.width * 0.62,
-              height: dotRect.height * 0.40,
+              width: pupilRect.width * 0.62,
+              height: pupilRect.height * 0.40,
             ),
-            fillPaint,
+            accentPaint,
           );
         }
         break;
@@ -2251,23 +2428,197 @@ class QrPainter extends CustomPainter {
         {
           _drawEyeRing(
             canvas,
-            Path()..addOval(outerRect),
-            Path()..addOval(innerRect),
-            fillPaint,
+            _roundRect(frameRect, 0.32),
+            _roundRect(holeRect, 0.28),
+            framePaint,
           );
-          final pupil = dotRect.deflate(dotRect.shortestSide * 0.04);
-          final split = Path()..addArc(pupil, math.pi / 2, math.pi);
-          split.cubicTo(
-            pupil.center.dx + pupil.width * 0.28,
-            pupil.top + pupil.height * 0.25,
-            pupil.center.dx - pupil.width * 0.28,
-            pupil.bottom - pupil.height * 0.25,
-            pupil.center.dx,
-            pupil.bottom,
+          canvas.drawRect(pupilRect, pupilPaint);
+          canvas.drawPath(
+            Path()
+              ..moveTo(pupilRect.left, pupilRect.top)
+              ..lineTo(pupilRect.right, pupilRect.top)
+              ..lineTo(pupilRect.left, pupilRect.bottom)
+              ..close(),
+            accentPaint,
           );
-          split.close();
-          canvas.drawPath(split, fillPaint);
         }
+        break;
+
+      case QrEyeShape.dottedMatrix:
+        {
+          final step = frameRect.width / 6;
+          final dotR = metrics.pixelSize * 0.42;
+          for (var i = 0; i < 7; i++) {
+            final topBottom = _eyeFill(
+              i == 0 || i == 6 ? frameColor : frameColor,
+            );
+            final side = _eyeFill(accentColor);
+            canvas.drawCircle(
+              Offset(frameRect.left + step * i, frameRect.top),
+              dotR,
+              topBottom,
+            );
+            canvas.drawCircle(
+              Offset(frameRect.left + step * i, frameRect.bottom),
+              dotR,
+              topBottom,
+            );
+            if (i > 0 && i < 6) {
+              canvas.drawCircle(
+                Offset(frameRect.left, frameRect.top + step * i),
+                dotR,
+                side,
+              );
+              canvas.drawCircle(
+                Offset(frameRect.right, frameRect.top + step * i),
+                dotR,
+                side,
+              );
+            }
+          }
+          final cell = pupilRect.width / 3;
+          for (var row = 0; row < 3; row++) {
+            for (var col = 0; col < 3; col++) {
+              canvas.drawCircle(
+                Offset(
+                  pupilRect.left + cell * col + cell / 2,
+                  pupilRect.top + cell * row + cell / 2,
+                ),
+                cell * 0.28,
+                pupilPaint,
+              );
+            }
+          }
+        }
+        break;
+
+      case QrEyeShape.pumpkin:
+        {
+          _drawEyeRing(
+            canvas,
+            _leafOutline(frameRect),
+            _leafOutline(holeRect),
+            framePaint,
+          );
+          canvas.drawOval(pupilRect, pupilPaint);
+          final face = accentPaint;
+          canvas.drawPath(
+            _trianglePath(
+              Rect.fromCenter(
+                center: Offset(
+                  pupilRect.center.dx - pupilRect.width * 0.18,
+                  pupilRect.center.dy - pupilRect.height * 0.08,
+                ),
+                width: pupilRect.width * 0.18,
+                height: pupilRect.height * 0.18,
+              ),
+            ),
+            face,
+          );
+          canvas.drawPath(
+            _trianglePath(
+              Rect.fromCenter(
+                center: Offset(
+                  pupilRect.center.dx + pupilRect.width * 0.18,
+                  pupilRect.center.dy - pupilRect.height * 0.08,
+                ),
+                width: pupilRect.width * 0.18,
+                height: pupilRect.height * 0.18,
+              ),
+            ),
+            face,
+          );
+          canvas.drawArc(
+            Rect.fromCenter(
+              center: Offset(
+                pupilRect.center.dx,
+                pupilRect.center.dy + pupilRect.height * 0.12,
+              ),
+              width: pupilRect.width * 0.55,
+              height: pupilRect.height * 0.35,
+            ),
+            0.15,
+            math.pi - 0.3,
+            false,
+            _eyeStroke(accentColor, metrics.pixelSize * 0.35),
+          );
+        }
+        break;
+
+      case QrEyeShape.glitch:
+        {
+          final cyan = _eyeStroke(const Color(0xff00e5ff), metrics.pixelSize);
+          final pink = _eyeStroke(const Color(0xffff4fd8), metrics.pixelSize);
+          final black = _eyeStroke(frameColor, metrics.pixelSize * 1.05);
+          final shape = _roundRect(frameRect, 0.28);
+          canvas.save();
+          canvas.translate(-metrics.pixelSize * 0.35, 0);
+          canvas.drawPath(shape, cyan);
+          canvas.restore();
+          canvas.save();
+          canvas.translate(metrics.pixelSize * 0.35, 0);
+          canvas.drawPath(shape, pink);
+          canvas.restore();
+          canvas.drawPath(shape, black);
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(
+              pupilRect,
+              Radius.circular(pupilRect.shortestSide * 0.22),
+            ),
+            pupilPaint,
+          );
+        }
+        break;
+
+      case QrEyeShape.clover:
+        {
+          _drawEyeRing(
+            canvas,
+            _roundRect(frameRect, 0.32),
+            _roundRect(holeRect, 0.28),
+            framePaint,
+          );
+          final leafSize = pupilRect.shortestSide * 0.42;
+          final centers = <Offset>[
+            Offset(
+              pupilRect.center.dx,
+              pupilRect.center.dy - leafSize * 0.45,
+            ),
+            Offset(
+              pupilRect.center.dx,
+              pupilRect.center.dy + leafSize * 0.45,
+            ),
+            Offset(
+              pupilRect.center.dx - leafSize * 0.45,
+              pupilRect.center.dy,
+            ),
+            Offset(
+              pupilRect.center.dx + leafSize * 0.45,
+              pupilRect.center.dy,
+            ),
+          ];
+          for (final c in centers) {
+            canvas.drawOval(
+              Rect.fromCenter(
+                center: c,
+                width: leafSize,
+                height: leafSize,
+              ),
+              pupilPaint,
+            );
+          }
+        }
+        break;
+
+      case QrEyeShape.gradientRing:
+        _drawEyeRing(
+          canvas,
+          Path()..addOval(frameRect),
+          Path()..addOval(holeRect),
+          framePaint,
+          pupil: Path()..addOval(pupilRect),
+          pupilPaint: pupilPaint,
+        );
         break;
 
       default:
@@ -2394,4 +2745,18 @@ class _PaintMetrics {
     _innerContentSize = (_pixelSize * moduleCount) + gapTotal;
     _inset = (containerSize - _innerContentSize) / 2;
   }
+}
+
+class _FigmaEyeTheme {
+  const _FigmaEyeTheme({
+    required this.frame,
+    required this.pupil,
+    this.accent,
+    this.gradient,
+  });
+
+  final Color frame;
+  final Color pupil;
+  final Color? accent;
+  final Gradient? gradient;
 }

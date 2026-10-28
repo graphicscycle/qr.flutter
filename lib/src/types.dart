@@ -159,6 +159,21 @@ enum QrEyeShape {
 
   /// Circle frame with a split center.
   splitCircle,
+
+  /// Multicolor dotted frame with a 3x3 center.
+  dottedMatrix,
+
+  /// Leaf frame with a jack-o'-lantern center.
+  pumpkin,
+
+  /// Offset / glitch rounded frame.
+  glitch,
+
+  /// Rounded frame with a clover center.
+  clover,
+
+  /// Gradient circle frame and pupil.
+  gradientRing,
 }
 
 /// Enumeration representing the shape of Data modules inside QR.
@@ -239,6 +254,11 @@ class QrEyeStyle {
     this.eyeShape = QrEyeShape.square,
     this.color,
     this.borderRadius = 0,
+    this.frameColor,
+    this.pupilColor,
+    this.accentColor,
+    this.gradient,
+    this.useFigmaColors = true,
   });
 
   /// Eye shape.
@@ -250,13 +270,39 @@ class QrEyeStyle {
   /// Border radius
   final double borderRadius;
 
+  /// Optional override for the outer eye frame color.
+  final Color? frameColor;
+
+  /// Optional override for the inner pupil color.
+  final Color? pupilColor;
+
+  /// Optional override for secondary accent details.
+  final Color? accentColor;
+
+  /// Optional gradient for themed eyes (frame + pupil).
+  final Gradient? gradient;
+
+  /// When true, decorative eyes use their Figma palette by default.
+  final bool useFigmaColors;
+
   @override
-  int get hashCode => eyeShape.hashCode ^ color.hashCode;
+  int get hashCode =>
+      eyeShape.hashCode ^
+      color.hashCode ^
+      frameColor.hashCode ^
+      pupilColor.hashCode ^
+      accentColor.hashCode ^
+      useFigmaColors.hashCode;
 
   @override
   bool operator ==(Object other) {
     if (other is QrEyeStyle) {
-      return eyeShape == other.eyeShape && color == other.color;
+      return eyeShape == other.eyeShape &&
+          color == other.color &&
+          frameColor == other.frameColor &&
+          pupilColor == other.pupilColor &&
+          accentColor == other.accentColor &&
+          useFigmaColors == other.useFigmaColors;
     }
     return false;
   }
