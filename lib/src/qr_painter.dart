@@ -989,9 +989,76 @@ class QrPainter extends CustomPainter {
         final dotAssetId = _dotAssetId(dataModuleStyle.dataModuleShape);
         if (dotAssetId != null) {
           if (isDark) {
+            var drawRect = squareRect;
+            // Connect horizontal / vertical capsules like the Figma samples.
+            if (dataModuleStyle.dataModuleShape ==
+                QrDataModuleShape.barHorizontal) {
+              final leftDark = _isDarkOnSide(
+                x - 1,
+                y,
+                safeAreaRect,
+                paintMetrics,
+                gap,
+              );
+              final rightDark = _isDarkOnSide(
+                x + 1,
+                y,
+                safeAreaRect,
+                paintMetrics,
+                gap,
+              );
+              var left = squareRect.left;
+              var width = squareRect.width;
+              if (leftDark) {
+                left -= gap.toDouble() / 2;
+                width += gap.toDouble() / 2;
+              }
+              if (rightDark) {
+                width += gap.toDouble() / 2;
+              }
+              final h = squareRect.height *
+                  (leftDark || rightDark ? 0.72 : 0.78);
+              drawRect = Rect.fromCenter(
+                center: Offset(left + width / 2, squareRect.center.dy),
+                width: width,
+                height: h,
+              );
+            } else if (dataModuleStyle.dataModuleShape ==
+                QrDataModuleShape.barVertical) {
+              final topDark = _isDarkOnSide(
+                x,
+                y - 1,
+                safeAreaRect,
+                paintMetrics,
+                gap,
+              );
+              final bottomDark = _isDarkOnSide(
+                x,
+                y + 1,
+                safeAreaRect,
+                paintMetrics,
+                gap,
+              );
+              var top = squareRect.top;
+              var height = squareRect.height;
+              if (topDark) {
+                top -= gap.toDouble() / 2;
+                height += gap.toDouble() / 2;
+              }
+              if (bottomDark) {
+                height += gap.toDouble() / 2;
+              }
+              final w = squareRect.width *
+                  (topDark || bottomDark ? 0.72 : 0.78);
+              drawRect = Rect.fromCenter(
+                center: Offset(squareRect.center.dx, top + height / 2),
+                width: w,
+                height: height,
+              );
+            }
             drawDotSvgModule(
               canvas,
-              squareRect,
+              drawRect,
               dotAssetId,
               paint,
               seed: _moduleAccentSeed(x, y),
