@@ -13,11 +13,122 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr/qr.dart';
 import 'dart:math' as math;
+import 'asset_shapes.dart';
 import 'errors.dart';
 import 'paint_cache.dart';
 import 'qr_versions.dart';
 import 'types.dart';
 import 'validator.dart';
+
+int? _eyeAssetId(QrEyeShape shape) {
+  switch (shape) {
+    case QrEyeShape.diamondSquare:
+      return 16;
+    case QrEyeShape.arch:
+      return 17;
+    case QrEyeShape.dottedFrame:
+      return 18;
+    case QrEyeShape.starCut:
+      return 19;
+    case QrEyeShape.circleBite:
+      return 20;
+    case QrEyeShape.octagon:
+      return 21;
+    case QrEyeShape.roundedDiamond:
+      return 22;
+    case QrEyeShape.singleRound:
+      return 23;
+    case QrEyeShape.circleSpark:
+      return 24;
+    case QrEyeShape.octagonTriangle:
+      return 25;
+    case QrEyeShape.squareHeart:
+      return 26;
+    case QrEyeShape.circlePillVertical:
+      return 27;
+    case QrEyeShape.circlePillHorizontal:
+      return 28;
+    case QrEyeShape.octagonCross:
+      return 29;
+    case QrEyeShape.dottedSlash:
+      return 30;
+    case QrEyeShape.bear:
+      return 31;
+    case QrEyeShape.roundedCircle:
+      return 32;
+    case QrEyeShape.dottedMatrix:
+      return 33;
+    case QrEyeShape.pumpkin:
+      return 34;
+    case QrEyeShape.tealPetal:
+      return 35;
+    case QrEyeShape.windowGrid:
+      return 36;
+    case QrEyeShape.glitch:
+      return 37;
+    case QrEyeShape.leafCircle:
+      return 38;
+    case QrEyeShape.gift:
+      return 39;
+    case QrEyeShape.circleStar:
+      return 40;
+    case QrEyeShape.basketball:
+      return 41;
+    case QrEyeShape.play:
+      return 42;
+    case QrEyeShape.softBlob:
+      return 43;
+    case QrEyeShape.splitCircle:
+      return 44;
+    case QrEyeShape.paw:
+      return 45;
+    case QrEyeShape.ringLine:
+      return 46;
+    case QrEyeShape.heartRounded:
+      return 47;
+    case QrEyeShape.clover:
+      return 48;
+    case QrEyeShape.gradientRing:
+      return 49;
+    default:
+      return null;
+  }
+}
+
+int? _dotAssetId(QrDataModuleShape shape) {
+  switch (shape) {
+    case QrDataModuleShape.roundDot:
+      return 9;
+    case QrDataModuleShape.rhombus:
+      return 10;
+    case QrDataModuleShape.sparkle:
+      return 11;
+    case QrDataModuleShape.triangle:
+      return 12;
+    case QrDataModuleShape.heart:
+      return 13;
+    case QrDataModuleShape.softSquare:
+      return 14;
+    case QrDataModuleShape.plus:
+      return 15;
+    case QrDataModuleShape.barHorizontal:
+      return 16;
+    case QrDataModuleShape.barVertical:
+      return 17;
+    case QrDataModuleShape.mixedHeart:
+      return 18;
+    case QrDataModuleShape.mixedBlob:
+      return 19;
+    case QrDataModuleShape.mixedButterfly:
+      return 20;
+    case QrDataModuleShape.mixedSpecial:
+      return 21;
+    case QrDataModuleShape.hourglass:
+      return 22;
+    default:
+      return null;
+  }
+}
 
 // ignore_for_file: deprecated_member_use_from_same_package
 
@@ -875,6 +986,19 @@ class QrPainter extends CustomPainter {
         // check safeArea
         if (embeddedImageStyle.safeArea &&
             safeAreaRect?.overlaps(squareRect) == true) continue;
+        final dotAssetId = _dotAssetId(dataModuleStyle.dataModuleShape);
+        if (dotAssetId != null) {
+          if (isDark) {
+            drawDotSvgModule(
+              canvas,
+              squareRect,
+              dotAssetId,
+              paint,
+              seed: _moduleAccentSeed(x, y),
+            );
+          }
+          continue;
+        }
         switch (dataModuleStyle.dataModuleShape) {
           case QrDataModuleShape.square:
             if (dataModuleStyle.borderRadius > 0) {
@@ -1478,6 +1602,18 @@ class QrPainter extends CustomPainter {
     );
     final accentPaint = _eyeFill(accentColor);
     const octagonTurn = -math.pi / 2 + math.pi / 8;
+
+    // Draw Figma SVG assets exactly when this eye shape maps to an export.
+    final eyeAssetId = _eyeAssetId(eyeStyle.eyeShape);
+    if (eyeAssetId != null) {
+      drawEyeSvgAsset(
+        canvas,
+        frameRect,
+        eyeAssetId,
+        tint: eyeStyle.useFigmaColors ? null : color,
+      );
+      return;
+    }
 
     switch (eyeStyle.eyeShape) {
       // SVG 2 - Pure Circle

@@ -174,6 +174,21 @@ enum QrEyeShape {
 
   /// Gradient circle frame and pupil.
   gradientRing,
+
+  /// Dotted rounded-square frame (asset 18).
+  dottedFrame,
+
+  /// Purple rounded frame with teal petal (asset 35).
+  tealPetal,
+
+  /// Green soft blob pupil (asset 43).
+  softBlob,
+
+  /// Circle with a curved center line (asset 46).
+  ringLine,
+
+  /// Rounded pink frame with heart pupil (asset 47).
+  heartRounded,
 }
 
 /// Enumeration representing the shape of Data modules inside QR.
