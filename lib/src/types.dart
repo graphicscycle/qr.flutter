@@ -87,6 +87,78 @@ enum QrEyeShape {
 
   /// Pinched
   pinched,
+
+  /// Square frame with a diamond center.
+  diamondSquare,
+
+  /// Open rounded arch.
+  arch,
+
+  /// Square frame with a four-point star center.
+  starCut,
+
+  /// Circle with a flat cut on the bottom-right.
+  circleBite,
+
+  /// Octagon frame and center.
+  octagon,
+
+  /// Rounded-square frame with a diamond center.
+  roundedDiamond,
+
+  /// Square frame with one large rounded corner.
+  singleRound,
+
+  /// Circle frame with a four-point sparkle.
+  circleSpark,
+
+  /// Octagon frame with a triangle center.
+  octagonTriangle,
+
+  /// Square frame with a heart center.
+  squareHeart,
+
+  /// Circle frame with a vertical capsule center.
+  circlePillVertical,
+
+  /// Circle frame with a horizontal capsule center.
+  circlePillHorizontal,
+
+  /// Octagon frame with an X center.
+  octagonCross,
+
+  /// Dotted square frame with a diagonal slash.
+  dottedSlash,
+
+  /// Circle frame with two ears.
+  bear,
+
+  /// Rounded frame with a two-by-two grid.
+  windowGrid,
+
+  /// Leaf frame with a circle center.
+  leafCircle,
+
+  /// Rounded frame with a gift icon.
+  gift,
+
+  /// Circle frame with a five-point star.
+  circleStar,
+
+  /// Basketball outline.
+  basketball,
+
+  /// Rounded frame with a play triangle.
+  play,
+
+  /// Rounded-square frame with a circle center.
+  roundedCircle,
+
+  /// Rounded frame with a paw print.
+  paw,
+
+  /// Circle frame with a split center.
+  splitCircle,
 }
 
 /// Enumeration representing the shape of Data modules inside QR.
@@ -103,6 +175,48 @@ enum QrDataModuleShape {
   cross,
   horizontal,
   vertical,
+
+  /// Soft circular dots.
+  roundDot,
+
+  /// Rhombus / diamond dots.
+  rhombus,
+
+  /// Four-point sparkle dots.
+  sparkle,
+
+  /// Upward triangle dots.
+  triangle,
+
+  /// Heart-shaped dots.
+  heart,
+
+  /// Soft rounded-square dots.
+  softSquare,
+
+  /// Plus / cross dots.
+  plus,
+
+  /// Horizontal capsules that connect with neighbors.
+  barHorizontal,
+
+  /// Vertical capsules that connect with neighbors.
+  barVertical,
+
+  /// Circles with occasional heart accents.
+  mixedHeart,
+
+  /// Circles with occasional oversized blobs.
+  mixedBlob,
+
+  /// Circles with occasional butterfly accents.
+  mixedButterfly,
+
+  /// Circles with X marks and larger rounded blocks.
+  mixedSpecial,
+
+  /// Hourglass / bowtie dots.
+  hourglass,
 }
 
 /// Enumeration representing the shape behind embedded picture
