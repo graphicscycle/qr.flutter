@@ -232,7 +232,8 @@ const Map<int, List<SvgDrawOp>> kEyeSvgOps = {
   ],
   41: [
     SvgDrawOp(d: "M21.09 0C26.6834 0 32.0477 2.22198 36.0029 6.17712C39.958 10.1323 42.18 15.4966 42.18 21.09C42.18 26.6834 39.958 32.0477 36.0029 36.0029C32.0477 39.958 26.6834 42.18 21.09 42.18C15.4966 42.18 10.1323 39.958 6.17712 36.0029C2.22198 32.0477 0 26.6834 0 21.09C0 15.4966 2.22198 10.1323 6.17712 6.17712C10.1323 2.22198 15.4966 0 21.09 0ZM21.09 5.42314C16.9349 5.42314 12.95 7.07375 10.0119 10.0119C7.07375 12.95 5.42314 16.9349 5.42314 21.09C5.42314 25.2451 7.07375 29.23 10.0119 32.1681C12.95 35.1062 16.9349 36.7569 21.09 36.7569C25.2451 36.7569 29.23 35.1062 32.1681 32.1681C35.1062 29.23 36.7569 25.2451 36.7569 21.09C36.7569 16.9349 35.1062 12.95 32.1681 10.0119C29.23 7.07375 25.2451 5.42314 21.09 5.42314Z", fill: Color(0xffd95b38), evenOdd: true),
-    SvgDrawOp(d: "M21.0894 30.1279C26.0812 30.1279 30.1279 26.0812 30.1279 21.0894C30.1279 16.0975 26.0812 12.0508 21.0894 12.0508C16.0975 12.0508 12.0508 16.0975 12.0508 21.0894C12.0508 26.0812 16.0975 30.1279 21.0894 30.1279Z", fill: Color(0xffd95b38)),
+    // Center ball inflated ~+1.2 so seam strokes stay inside the fill.
+    SvgDrawOp(d: "M21.0894 31.3279C26.743 31.3279 31.3279 26.743 31.3279 21.0894C31.3279 15.4358 26.743 10.8508 21.0894 10.8508C15.4358 10.8508 10.8508 15.4358 10.8508 21.0894C10.8508 26.743 15.4358 31.3279 21.0894 31.3279Z", fill: Color(0xffd95b38)),
     SvgDrawOp(d: "M12.0508 21.0898H30.1279", stroke: Color(0xff9e3518), strokeWidth: 1.20308),
     SvgDrawOp(d: "M21.0879 12.0508V30.1279", stroke: Color(0xff9e3518), strokeWidth: 1.20308),
     SvgDrawOp(d: "M14.4609 14.4619C18.8798 18.8808 18.8798 23.2996 14.4609 27.7185", stroke: Color(0xff9e3518), strokeWidth: 1.20308),
@@ -502,7 +503,15 @@ void drawEyeSvgAsset(Canvas canvas, Rect dst, int assetId, {Color? tint}) {
   canvas.save();
   canvas.translate(dst.left, dst.top);
   canvas.scale(scale, scale);
-  for (final op in ops) {
+
+  // Basketball: clip seam strokes to the center ball so lines don't poke out.
+  Path? basketballClip;
+  if (assetId == 41 && ops.length > 1) {
+    basketballClip = parseSvgPath(ops[1].d);
+  }
+
+  for (var i = 0; i < ops.length; i++) {
+    final op = ops[i];
     final path = parseSvgPath(op.d)
       ..fillType =
           op.evenOdd ? PathFillType.evenOdd : PathFillType.nonZero;
@@ -531,7 +540,14 @@ void drawEyeSvgAsset(Canvas canvas, Rect dst, int assetId, {Color? tint}) {
         ..color = tint ?? op.stroke!
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
-      canvas.drawPath(path, paint);
+      if (basketballClip != null && i > 1) {
+        canvas.save();
+        canvas.clipPath(basketballClip);
+        canvas.drawPath(path, paint);
+        canvas.restore();
+      } else {
+        canvas.drawPath(path, paint);
+      }
     }
   }
   canvas.restore();
