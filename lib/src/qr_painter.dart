@@ -97,6 +97,22 @@ int? _eyeAssetId(QrEyeShape shape) {
 
 int? _dotAssetId(QrDataModuleShape shape) {
   switch (shape) {
+    case QrDataModuleShape.square:
+      return 1;
+    case QrDataModuleShape.circle:
+      return 2;
+    case QrDataModuleShape.roundedSquare:
+      return 3;
+    case QrDataModuleShape.diamond:
+      return 4;
+    case QrDataModuleShape.star:
+      return 5;
+    case QrDataModuleShape.cross:
+      return 6;
+    case QrDataModuleShape.horizontal:
+      return 7;
+    case QrDataModuleShape.vertical:
+      return 8;
     case QrDataModuleShape.roundDot:
       return 9;
     case QrDataModuleShape.rhombus:
@@ -125,8 +141,6 @@ int? _dotAssetId(QrDataModuleShape shape) {
       return 21;
     case QrDataModuleShape.hourglass:
       return 22;
-    default:
-      return null;
   }
 }
 
@@ -987,7 +1001,12 @@ class QrPainter extends CustomPainter {
         if (embeddedImageStyle.safeArea &&
             safeAreaRect?.overlaps(squareRect) == true) continue;
         final dotAssetId = _dotAssetId(dataModuleStyle.dataModuleShape);
-        if (dotAssetId != null) {
+        // Keep procedural square when corner-radius styling is requested.
+        final useDotAsset = dotAssetId != null &&
+            !(dotAssetId == 1 &&
+                (dataModuleStyle.borderRadius > 0 ||
+                    isRoundedOutsideCorners));
+        if (useDotAsset) {
           if (isDark) {
             var drawRect = squareRect;
             // Connect horizontal / vertical capsules like the Figma samples.
