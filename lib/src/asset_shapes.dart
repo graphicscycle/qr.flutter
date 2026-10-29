@@ -574,14 +574,23 @@ void drawEyeSvgAsset(Canvas canvas, Rect dst, int assetId, {Color? tint}) {
           op.evenOdd ? PathFillType.evenOdd : PathFillType.nonZero;
     final paint = Paint()..isAntiAlias = true;
     if (op.gradientColors != null) {
-      paint
-        ..shader = ui.Gradient.linear(
-          Offset(op.gradX1!, op.gradY1!),
-          Offset(op.gradX2!, op.gradY2!),
-          op.gradientColors!,
-          op.gradientStops,
-        )
-        ..style = PaintingStyle.fill;
+      // When tinting (foreground/eye color), replace baked gradients with
+      // a solid tint so user-selected colors actually apply.
+      if (tint != null) {
+        paint
+          ..shader = null
+          ..style = PaintingStyle.fill
+          ..color = tint;
+      } else {
+        paint
+          ..shader = ui.Gradient.linear(
+            Offset(op.gradX1!, op.gradY1!),
+            Offset(op.gradX2!, op.gradY2!),
+            op.gradientColors!,
+            op.gradientStops,
+          )
+          ..style = PaintingStyle.fill;
+      }
       canvas.drawPath(path, paint);
     } else if (op.fill != null) {
       paint
