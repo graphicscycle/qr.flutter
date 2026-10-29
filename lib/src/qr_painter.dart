@@ -1629,7 +1629,9 @@ class QrPainter extends CustomPainter {
     )!;
     final color = _priorityColor(eyeStyle.color);
     outerPaint.strokeWidth = metrics.pixelSize;
-    outerPaint.color = color;
+    // Classic eyes (square/circle/roundedOuter/…) use outerPaint + dotPaint.
+    // Honor frameColor/pupilColor when set so two-tone templates work.
+    outerPaint.color = eyeStyle.frameColor ?? color;
 
     final innerPaint = _paintCache.firstPaint(
       QrCodeElement.finderPatternInner,
@@ -1642,7 +1644,7 @@ class QrPainter extends CustomPainter {
       QrCodeElement.finderPatternDot,
       position: position,
     );
-    dotPaint!.color = color;
+    dotPaint!.color = eyeStyle.pupilColor ?? color;
 
     final outerRect = Rect.fromLTWH(offset.dx, offset.dy, radius, radius);
 
