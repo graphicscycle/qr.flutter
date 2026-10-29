@@ -1501,14 +1501,13 @@ class QrPainter extends CustomPainter {
       }
     }
 
-    // set gradient for all (eyes + data modules). srcIn so black masks
-    // pick up the gradient; BlendMode.plus left eyes looking solid black.
+    // set gradient for all
     if (gradient != null) {
       final paintGradient = Paint();
       paintGradient.shader = gradient!.createShader(
         Rect.fromLTWH(0, 0, size.width, size.height),
       );
-      paintGradient.blendMode = BlendMode.srcIn;
+      paintGradient.blendMode = BlendMode.values[12];
       canvas.drawRect(
         Rect.fromLTWH(
           paintMetrics.inset,
