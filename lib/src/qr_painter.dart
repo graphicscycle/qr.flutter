@@ -1690,8 +1690,12 @@ class QrPainter extends CustomPainter {
     const octagonTurn = -math.pi / 2 + math.pi / 8;
 
     // Draw Figma SVG assets exactly when this eye shape maps to an export.
+    // Skip the mono-tint SVG path when frame/pupil colors are set so the
+    // procedural dual-color branch (frameColor + pupilColor) can run.
     final eyeAssetId = _eyeAssetId(eyeStyle.eyeShape);
-    if (eyeAssetId != null) {
+    final hasCustomEyeColors =
+        eyeStyle.frameColor != null || eyeStyle.pupilColor != null;
+    if (eyeAssetId != null && !hasCustomEyeColors) {
       drawEyeSvgAsset(
         canvas,
         frameRect,
